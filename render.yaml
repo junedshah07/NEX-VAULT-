@@ -1,0 +1,44 @@
+# ============================================================
+#  NEX VAULT  —  Render.com Blueprint
+#  This file fixes the "blank website / data disappears" bug.
+#
+#  THE CAUSE: Render ka normal disk EPHEMERAL hota hai. Har deploy
+#  ya restart (free plan spin-down) par /data folder WIPE ho jaata
+#  hai -> database (nexvault.db), uploads aur backups sab delete ->
+#  catalogue khaali -> visitor ko BLANK site dikhti hai.
+#
+#  THE FIX: Niche ek PERSISTENT DISK /data par mount kiya gaya hai.
+#  Isse aapka data redeploy/restart ke baad bhi safe rahega.
+#  NOTE: Persistent disk ke liye Render ka PAID plan chahiye (free
+#  plan par disk available nahi hota).
+# ============================================================
+services:
+  - type: web
+    name: nex-vault
+    runtime: docker            # aap Dockerfile use kar rahe ho
+    dockerfilePath: ./Dockerfile
+    plan: starter              # disk ke liye paid plan (starter/standard)
+    region: singapore          # India ke paas sabse achha; chaho to change karo
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATA_DIR
+        value: /data           # MUST match disk mountPath niche
+      - key: PORT
+        value: "3000"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_PASSWORD
+        sync: false            # Render dashboard me manually set karo (secret)
+      - key: BANK_WEBHOOK_SECRET
+        sync: false            # Render dashboard me manually set karo (secret)
+      - key: DELIVERY_MAX_DOWNLOADS
+        value: "5"
+      - key: DELIVERY_EXPIRES_MIN
+        value: "60"
+    disk:
+      name: nexvault-data
+      mountPath: /data         # MUST match DATA_DIR upar
+      sizeGB: 1                # 1 GB kaafi hai; baad me badha sakte ho
